@@ -1,166 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
+#!/usr/bin/python3
+"""
+This is the flask App that integrates with AirBnB static HTML Template.
+"""
+from flask import Flask, render_template, url_for
+from models import storage
+import uuid;
 
-    <!-- HEAD -->
+# flask setup
+app = Flask(__name__)
+app.url_map.strict_slashes = False
+port = 5000
+host = '0.0.0.0'
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <title>Holberton AirBnB</title>
 
-    <!-- FAVICON -->
+# begin flask page rendering
+@app.teardown_appcontext
+def teardown_db(exception):
+    """
+    after each request, this method calls .close() (i.e. .remove()) on
+    the current SQLAlchemy Session
+    """
+    storage.close()
 
-    <link rel="shortcut icon" href="../static/images/icon.png?{{ cache_id }}">
 
-    <!-- **********************
-	 CSS styles
-	 ********************** -->
+@app.route('/1-hbnb')
+def hbnb_filters(the_id=None):
+    """
+    handles request to custom template with states, cities & amentities
+    """
+    state_objs = storage.all('State').values()
+    states = dict([state.name, state] for state in state_objs)
+    amens = storage.all('Amenity').values()
+    places = storage.all('Place').values()
+    users = dict([user.id, "{} {}".format(user.first_name, user.last_name)]
+                 for user in storage.all('User').values())
+    return render_template('1-hbnb.html',
+                           cache_id=uuid.uuid4(),
+                           states=states,
+                           amens=amens,
+                           places=places,
+                           users=users)
 
-    <link rel="stylesheet" href="../static/styles/4-common.css?{{ cache_id }}">
-    <link rel="stylesheet" href="../static/styles/3-header.css?{{ cache_id }}">
-    <link rel="stylesheet" href="../static/styles/3-footer.css?{{ cache_id }}">
-    <link rel="stylesheet" href="../static/styles/6-filters.css?{{ cache_id }}">
-    <link rel="stylesheet" href="../static/styles/8-places.css?{{ cache_id }}">
-    <link rel="stylesheet" href="../static/styles/font-awesome.css?{{ cache_id }}">
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="../static/scripts/1-hbnb.js?{{ cache_id }}"></script>
-  </head>
-
-  <!-- **********************
-       BODY
-       ********************** -->
-
-  <body>
-
-    <!-- **********************
-	 HEADER
-	 ********************** -->
-
-    <header>
-    </header>
-    <main>
-      <div class="container">
-
-	<!-- **********************
-	     FILTERS
-	     ********************** -->
-
-	<section class="filters">
-
-	  <!-- **********************
-	       LOCATIONS
-	       ********************** -->
-
-	  <div class="locations">
-	    <h3>States</h3>
-	    <h4>&nbsp;</h4>
-	    <ul class="popover">
-	      {% for state in states|dictsort %}
-	      <H2>{{ state[0] }}</H2>
-	      <UL>
-		{% for city in state[1].cities|sort(attribute='name') %}
-		<LI>{{ city.name }}</LI>
-		{% endfor %}
-	      </UL>
-	      {% endfor %}
-	    </ul>
-	  </div>
-
-	  <!-- **********************
-	       AMENITIES
-	       ********************** -->
-
-	  <div class="amenities">
-	    <h3>Amenities</h3>
-	    <h4>&nbsp;</h4>
-	    <ul class="popover">
-	      {% for amenity in amens|sort(attribute='name') %}
-	      <LI><INPUT type="checkbox" data-id="{{ amenity.id }}" data-name="{{ amenity.name }}">{{ amenity.name }}</LI>
-	      {% endfor %}
-	    </ul>
-	  </div>
-
-	  <!-- **********************
-	       SEARCH BUTTON
-	       ********************** -->
-
-	  <button>Search</button>
-	</section>
-
-	<section class="places">
-	  <h1>Places</h1>
-
-	<!-- **********************
-	     BEGIN 1 PLACE
-	     ********************** -->
-
-	  {% for place in places|sort(attribute='name') %}
-
-	  <article>
-
-	    <div class="title">
-
-	      <h2>{{ place.name }}</h2>
-
-	      <div class="price_by_night">
-
-		{{ place.price_by_night }}
-
-	      </div>
-	    </div>
-	    <div class="information">
-	      <div class="max_guest">
-		<i class="fa fa-users fa-3x" aria-hidden="true"></i>
-
-		<br />
-
-		{{ place.max_guest }} Guests
-
-	      </div>
-	      <div class="number_rooms">
-		<i class="fa fa-bed fa-3x" aria-hidden="true"></i>
-
-		<br />
-
-		{{ place.number_rooms }} Bedrooms
-	      </div>
-	      <div class="number_bathrooms">
-		<i class="fa fa-bath fa-3x" aria-hidden="true"></i>
-
-		<br />
-
-		{{ place.number_bathrooms }} Bathroom
-
-	      </div>
-	    </div>
-
-	    <!-- **********************
-		 USER
-		 **********************  -->
-
-	    <div class="user">
-
-	      <strong>Owner: {{ users[place.user_id] }}</strong>
-
-	    </div>
-	    <div class="description">
-
-	      {{ place.description }}
-
-	    </div>
-
-	  </article> <!-- End 1 PLACE Article -->
-
-	  {% endfor %}
-
-	</section>
-      </div>
-    </main>
-
-    <!-- FOOTER -->
-
-    <footer>
-      Holberton School
-    </footer>
-  </body>
-</html>
+if __name__ == "__main__":
+    """
+    MAIN Flask App
+	"""
+    app.run(host=host, port=port)
